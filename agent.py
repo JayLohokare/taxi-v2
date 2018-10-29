@@ -1,8 +1,20 @@
 import numpy as np
 from collections import defaultdict
+import random
 
 class Agent:
-
+    
+    eps = 1 / 20000
+    alpha = 0.2
+    gamma = 1
+    
+    def update_Q_sarsa(self, state, action, reward, next_state=None, next_action=None):
+        current = self.Q[state][action]
+        Qsa_next = self.Q[next_state][next_action] if next_state is not None else 0    
+        target = reward + (self.gamma * Qsa_next)
+        new_value = current + (self.alpha * (target - current))
+        return new_value
+    
     def __init__(self, nA=6):
         """ Initialize agent.
 
@@ -24,7 +36,14 @@ class Agent:
         =======
         - action: an integer, compatible with the task's action space
         """
-        return np.random.choice(self.nA)
+        
+        #Using Epsilon greedy approach
+        if random.random() > self.eps: # select greedy action with probability epsilon
+            return np.argmax(self.Q[state])
+        else:                     # otherwise, select an action randomly
+            return random.randint(0, self.nA -1 )
+        
+#         return np.random.choice(self.nA)
 
     def step(self, state, action, reward, next_state, done):
         """ Update the agent's knowledge, using the most recently sampled tuple.
@@ -37,4 +56,18 @@ class Agent:
         - next_state: the current state of the environment
         - done: whether the episode is complete (True or False)
         """
-        self.Q[state][action] += 1
+        
+        if not done:
+            next_action = self.select_action(next_state) # epsilon-greedy action
+#             print (state, action, reward, next_state, next_action)
+            self.Q[state][action] = self.update_Q_sarsa(state, action, reward, next_state, next_action)
+
+            state = next_state     # S <- S'
+            action = next_action   # A <- A'
+        if done:
+            self.Q[state][action] = self.update_Q_sarsa(state, action, reward)
+           
+  
+        
+        
+#         self.Q[state][action] += 1
